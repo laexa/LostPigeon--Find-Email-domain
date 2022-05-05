@@ -1,5 +1,6 @@
 from guessemail import GuessEmail
-import Lista_clear
+
+
 def main():
 
 
@@ -10,12 +11,11 @@ def main():
     print("Author: Martyna Mazur")
     print("https://github.com/laexa")
     print("__________________________________________________________________")
-    print(f"Current List containts {len(Lista_clear.domain_list)} checked domains")
-    print("List with old and unchecked domains containts ",len(Lista_clear.mix_list))
 
+
+
+    check= input("Do you want to include email providers which can be no longer available ? Y/N")
     print("__________________________________________________________________")
-
-    check= input("Do you want to include email providers which can be no longer availble ? Y/N")
     print("Find email domain ")
 
 
@@ -23,6 +23,8 @@ def main():
     print("_________________________________")
     GuessEmail(email,check.upper())
     print("_________________________________")
+
+
 
 
 

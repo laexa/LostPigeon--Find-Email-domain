@@ -1,18 +1,108 @@
 import sys
-
-import Lista_clear
+import re
 
 class GuessEmail:
 
-    def __init__(self,email,chooice):
-        self.choice = chooice
-        self.email = self.clear_email(email)
-        self.results = []
-        self.filter = []
-        self.hasz_res = []
-        self.guess()
-        self.anw = self.filtered()
-        self.show()
+    def __init__(self,email,choice):
+        self.choice = choice
+        self.provider_list = []
+        self.full_list = []
+        self.g_results = []
+
+        self.email = self.clear_email(self.action_input_check(email))
+
+
+        self.email_end = self.check_ending(self.email)
+        self.email_end_l = len(self.email_end)
+        self.end_letter_amount = self.count_letters(self.email_end)
+        self.email_dom = self.clear_email(self.email)
+
+
+        self.d = self.split_half(self.email_dom)
+        self.d = self.only_letters(self.d)
+
+
+
+        self.e = self.split_half(self.email_end)
+        self.e = self.only_letters(self.e)
+
+
+        self.email_letter = self.only_letters(self.d)
+        self.email_dom_l = len(self.email_dom)
+        self.endd_letter_amount = self.count_letters(self.d)
+        self.end_letter = self.only_letters(self.e)
+
+
+        self.open()
+        self.check_matches()
+        self.results()
+
+
+    def results(self):
+        if len(self.g_results)==0:
+            print("Unknown domain")
+
+        else:
+            print(f"Guesses found ({len(self.g_results)}):",*self.g_results, sep="\n")
+            anwser = input("Do you want to save results ? Y/N")
+
+            if anwser.upper() =='Y':
+                self.save(self.g_results)
+            else:
+                sys.exit()
+
+
+    def choice_act(self):
+        if self.choice =='Y':
+            return self.full_list
+        else:
+            return self.provider_list
+
+    def check_matches(self):
+
+
+
+        for provider in self.choice_act():
+
+            provider_dom = provider
+            provider_dom_l = len(provider_dom)
+            provider_end = self.check_ending(provider)
+            provider_end_l = len(provider_end)
+
+
+            #spr czy dlugosc poczatku i konca jest taka sama w obu
+            if self.email_dom_l == provider_dom_l and self.email_end_l == provider_end_l:
+
+                #gdy nie ma zadnej litery
+                if self.endd_letter_amount == 0 and self.end_letter_amount == 0:
+                    self.g_results.append(provider)
+
+
+                #gdy litera w provider ale nie w end
+                if self.endd_letter_amount > 0 and self.end_letter_amount == 0:
+                    if provider_dom.startswith(self.d) == True:
+                        self.g_results.append(provider)
+
+
+                # nie ma litery w provider ale jest w end
+                if self.endd_letter_amount == 0 and self.end_letter_amount > 0:
+                    if provider_end.startswith(self.end_letter) == True:
+                        self.g_results.append(provider)
+
+
+                #litery w obu
+                if self.endd_letter_amount > 0 and self.end_letter_amount > 0:
+                    if provider_end.startswith(self.end_letter) == True and provider_dom.startswith(self.email_letter) == True:
+                        self.g_results.append(provider)
+
+
+
+
+
+    def only_letters(self,dom):
+        index= dom.split('#',1)
+        k= index[0]
+        return k
 
     def action(self,match):
         action_save = input("Do you want save the guesses ? Y/N")
@@ -20,136 +110,37 @@ class GuessEmail:
             self.save(match)
 
 
-    def show(self):
-
-        if len(self.filter) == 0 and len(self.results) ==0 :
-            print("Unknown domain")
-
-            if self.count_letters(self.check_ending(self.email)) == 0:
-
-                check = input("Do you want to see simillar length domain ? Y/N")
-                if check.upper() == 'Y':
-                    matches = self.hasz_all()
-                    if len(matches)==0:
-                        print("No matches")
-                    else:
-                        print(*matches, sep="\n")
-                        self.action(matches)
-                else:
-                    sys.exit()
-
-
-        else:
-            if len(self.filter ) > 0:
-                print(f"Guesses found ({len(self.filter)}):",*self.filter,sep="\n")
-                self.action(self.filter)
+    def action_input_check(self,email):
+        regex = '[A-Za-z0-9._%#+-]+@[A-Za-z0-9#.-]+\.[A-Za-z#]'
+        while True:
+            if re.search(regex,email):
+                return email
             else:
-                print(f"Guesses found ({len(self.results)}):",*self.results,sep="\n")
-                self.action(self.results)
+                print("Incorrect email. ")
+                email = input("Email:")
 
-    def hasz_all(self):
-        for domain in Lista_clear.domain_list:
-            # cz2 po kropce and
-            if self.check_len_match(domain) == True and self.check_len_match_before(domain) == True:
-                self.hasz_res.append(domain)
-        return self.hasz_res
-
-
-
-    def check(self,text):
-        letter_count = 0
-        for letter in text:
-            if letter.isalpha() == True or letter =="-":
-                letter_count +=1
-            else:
-                break
-        return letter_count
-
-
-    def guess(self):
-
-        if self.choice == 'Y':
-            for domain in Lista_clear.mix_list:
-                if len(domain) == len(self.email) and domain[0] == self.email[0]:
-                    if self.check_len_match(domain) == True:
-                        self.results.append(domain)
-
-        else:
-            for domain in Lista_clear.domain_list:
-                if len(domain) == len(self.email) and domain[0] == self.email[0]:
-                    if self.check_len_match(domain) == True:
-                        self.results.append(domain)
-
-    def filtered(self):
-        ver = self.check_ending(self.email)
-        #number of letters
-
-        ver1 = self.count_letters(ver)
-        dl = len(self.email)
-
-        #jesli nie ma zadnych liter po kropce
-        if ver1 ==0 :
-            return False
-
-        #jesli jest 1 litera
-        if ver1 == 1:
-            for domain in self.results:
-                v = self.check_ending(domain)
-                if ver[0] == v[0]:
-                    self.filter.append(domain)
-
-                # jesli jest 1 litera
-
-        #jeslisa 2 litery
-        if ver1 == 2:
-            for domain in self.results:
-                v = self.check_ending(domain)
-                if ver[0] == v[0] and ver[1]==v[1]:
-                    self.filter.append(domain)
-
-        #jesli koncowka jest cala w literach
-        if ver1 == len(ver):
-            for domain in self.results:
-                v = self.check_ending(domain)
-                if ver == v:
-                    self.filter.append(domain)
-
-
-    def check_len_match(self,domain):
-        end1 = self.check_ending(domain)
-        end2 = self.check_ending(self.email)
-
-        if len(end1) == len(end2):
-            return True
-
-    def check_len_match_before(self,domain):
-        end1 = self.clear_email(domain)
-        end2 = self.clear_email(self.email)
-
-        if len(end1) == len(end2):
-            return True
-
-    def check_first_letter(self,domain):
-        end1 = self.check_ending(domain)
-        end2 = self.check_ending(self.email)
-
-        if end2[0] != '#':
-            if end1[0]==end2[1]:
-                return True
-            else:
-                return False
-        else:
-            return False
 
     def check_ending(self,domain):
-        indeks = domain.find(".")
-        text2 = domain[indeks + 1::]
-        return text2
+
+
+        rev = domain[::-1]
+        end =  rev.split('.')
+        txt = end[0]
+        return txt[::-1]
+
 
     def clear_email(self,email):
+
         indeks = email.find("@")
         text2 = email[indeks + 1::]
         return text2
+
+    def split_half(self,email):
+
+        dom = email.split('.')
+        txt = dom[0]
+        return txt
+
 
     def count_letters(self,ending):
         count = 0
@@ -162,3 +153,17 @@ class GuessEmail:
         with open(f"{self.email}.txt",'w') as f:
             for domain in result:
                 f.writelines(domain +'\n')
+
+    def open(self):
+        with open('avaibledomains.txt', 'r') as fl:
+            domain_list = fl.read().split("\n")
+            self.provider_list = domain_list
+
+
+        # Credits to https://gist.github.co/tbrianjones
+        # https://gist.github.com/tbrianjones/5992856/87f527af7bdd21997722fa65143a9af7bee92583
+        with open('mixdomclear.txt', 'r') as fl:
+            mix_list = fl.read().split("\n")
+            self.full_list= mix_list
+
+
